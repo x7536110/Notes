@@ -6,7 +6,16 @@
 4. [EventEmitter类的介绍](#Node.js_EventEmitter)
 5. [Node.js的单线程异步原理](#Node.js的单线程异步原理)
 6. [Node.js的Buffer类](#Node.js-Buffer类)
-7. []()
+7. [Node.js的Stream对象](#Node.js的Stream对象)
+8. [Node.js的模块机制](#NodeJS的模块)
+9. [Node.js的函数机制](#NodeJS的函数)
+10. [Node.js的网络编程](#Node的网络编程)
+    - [TCP-Socket](#TCP-Socket)
+    - [UDP-SOCKET](#UDP-SOCKET)
+    - [WebSocket](#NodeJSWebSocket)
+11. [Node.js的路由](#NodeJS的路由)
+
+
 # 一个http-server-sample
 
 [返回目录](#本文目录)  
@@ -124,8 +133,8 @@ emit(event,[arg1],[arg2]...)|触发事件，如果规定了监听器的触发顺
 listenerCount(emitter, event)|返回指定事件的监听器数量
 
 # Node.js的单线程异步原理
-
-![Event loop](node_js_event_loop.png)
+### [返回目录](#目录)
+![Event loop](./img/node_js_event_loop.png)
 
 1. Nodejs与操作系统交互，我们在 Javascript 中调用的方法，最终都会通过 process.binding 传递到 C/C++ 层面，最终由他们来执行真正的操作。Node.js 即这样与操作系统进行互动。  
 2. nodejs所谓的单线程，只是主线程是单线程，所有的网络请求或者异步任务都交给了内部的线程池去实现，本身只负责不断的往返调度，由事件循环不断驱动事件执行。  
@@ -133,7 +142,7 @@ listenerCount(emitter, event)|返回指定事件的监听器数量
 4. Event loop就是主线程从主线程的事件队列里面不停循环的读取事件，驱动了所有的异步回调函数的执行，Event loop总共7个阶段，每个阶段都有一个任务队列，当所有阶段被顺序执行一次后，event loop 完成了一个 tick。  
 
 # Node.js-Buffer类
-
+### [返回目录](#目录)
 JavaScript 语言自身只有字符串数据类型，没有二进制数据类型。  
 在 Node.js 中，Buffer 类是随 Node 内核一起发布的核心库。Buffer 库为 Node.js 带来了一种存储原始数据的方法，可以让 Node.js 处理二进制数据，每当需要在 Node.js 中处理I/O操作中移动的数据时，就有可能使用 Buffer 库。
 ```js
@@ -184,6 +193,9 @@ Buffer.fill(value,[offset,end])
 ```
 
 # Node.js的Stream对象
+
+### [返回目录](#目录)
+
 Stream是一个抽象接口，Node中有很多对象实现了这个接口。  
 例如，对Http服务器发起的request请求，就是一个Stream;stdin/stdout也都是Stream。  
 NodeJS有4种流类型：  
@@ -274,6 +286,8 @@ console.log("文件解压完成。");
 
 ```
 # NodeJS的模块
+
+### [返回目录](#目录)
 为了让NodeJS的文件可以相互调用，NodeJS提供了一个简单的模块系统。  
 模块是Node.js 应用程序的基本组成部分，文件和模块是一一对应的。换言之，一个 Node.js 文件就是一个模块，这个文件可能是JavaScript 代码、JSON 或者编译过的C/C++ 扩展。    
 Node.js 提供了 exports 和 require 两个对象，其中 exports 是模块公开的接口，require 用于从外部获取一个模块的接口，即所获取模块的 exports 对象。  
@@ -308,6 +322,8 @@ hello.setName('BYVoid');
 hello.sayHello(); 
 ```
 # NodeJS的函数
+
+### [返回目录](#目录)
 在JS中，一个函数可以作为另一个函数的参数。我们可以先定义一个函数，然后传递，也可以直接在传参的地方定义匿名函数。  
 例如:
 ```js
@@ -421,10 +437,32 @@ UDP的事件与TCP相比更简单，主要有以下事件:
 - `close`:调用close()方法时触发该事件，触发后不再触发`message`事件
 - `error`:出现异常时触发该事件，如果不侦听程序会直接退出
 
-# NodeJS的WebSocket
+## NodeJSWebSocket
+
+HTML5推出了WebSocket标准，可以使浏览器和服务器之间建立无限制的全双工通信，用处极大；而Node对WebSocket的配合也堪称完美。引用自书中原话:  
+> - WebSocket客户端基于事件的编程模型与Node中自定义事件相差无几。  
+> - WebSocket实现了客户端与服务器之间的长连接，而Node事件驱动的方式十分擅长与大量的客户保持高并发连接。  
+> - 客户端与服务器端只建立一个TCP连接，可以使用更少的连接
+> - WebSocket服务器端可以推送数据给客户端，远比http请求响应模式更高效灵活
+> - 更轻量级的协议头，减少数据传输量
+
+### WebSocket的握手过程
+
+WebSocket的握手部分是由HTTP完成的，因此十分有迷惑性，客户端建立连接的报文如下:
+```http
+GET /chat HTTP/1.1
+Host: server.example.com
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Origin: http://example.com
+Sec-WebSocket-Protocol: chat, superchat
+Sec-WebSocket-Version: 13
+```
 
 
 # NodeJS的路由
+### [返回目录](#目录)
 路由可以理解为解析URL请求和其他的POST/GET请求，并提取数据执行相应代码的模块。  
 一个典型的解析过程如下:
 ```
