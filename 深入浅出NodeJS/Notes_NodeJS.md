@@ -1,3 +1,4 @@
+
 # 目录
 
 1. [一个http server sample](#一个http-server-sample)
@@ -458,8 +459,21 @@ Origin: http://example.com
 Sec-WebSocket-Protocol: chat, superchat
 Sec-WebSocket-Version: 13
 ```
-
-
+与普通的http报文相比，有两个字段区别：
+```http
+Upgrade: webSocket
+Connection: Upgrade
+```
+这两个字段的作用是请求服务端升级协议为webSocket协议，之后传递校验字段`Sec-WebSocket-Key`,该字段用于安全校验。
+服务端的响应报文如下：
+```http
+HTTP/1.1 101 Switching Protocols
+Upgrade: webSocket
+Connection: Upgrade
+Sec-WebSocket-Key: ......
+Sec-WebSocket-Protocol: chat
+```
+客户端收到报文后会校验`Sec-WebSocket-Key`的返回值，如果成功，则会开始数据传输。
 # NodeJS的路由
 [返回目录](#目录)   
 路由可以理解为解析URL请求和其他的POST/GET请求，并提取数据执行相应代码的模块。  
