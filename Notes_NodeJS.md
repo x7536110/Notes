@@ -2,19 +2,18 @@
 
 1. [一个http server sample](#一个http-server-sample)
 2. [npm的介绍与使用方法](#npm)
-3. [Node.JS的回调函数](#Node.js的回调函数)
-4. [EventEmitter类的介绍](#Node.js_EventEmitter)
-5. [Node.js的单线程异步原理](#Node.js的单线程异步原理)
-6. [Node.js的Buffer类](#Node.js-Buffer类)
-7. [Node.js的Stream对象](#Node.js的Stream对象)
-8. [Node.js的模块机制](#NodeJS的模块)
-9. [Node.js的函数机制](#NodeJS的函数)
-10. [Node.js的网络编程](#Node的网络编程)
-    - [TCP-Socket](#TCP-Socket)
-    - [UDP-SOCKET](#UDP-SOCKET)
-    - [WebSocket](#NodeJSWebSocket)
-11. [Node.js的路由](#NodeJS的路由)
-
+3. [Node.JS的回调函数](#Nodejs的回调函数)
+4. [EventEmitter类的介绍](#Nodejs_EventEmitter)
+5. [Node.js的单线程异步原理](#nodejs的单线程异步原理)
+6. [Node.js的Buffer类](#nodejs-buffer类)
+7. [Node.js的Stream对象](#nodejs的stream对象)
+8. [Node.js的模块机制](#nodejs的模块)
+9. [Node.js的函数机制](#nodejs的函数)
+10. [Node.js的网络编程](#node的网络编程)
+    - [TCP-Socket](#tcp-socket)
+    - [UDP-SOCKET](#udp-socket)
+    - [WebSocket](#nodejswebsocket)
+11. [Node.js的路由](#nodejs的路由)
 
 # 一个http-server-sample
 
@@ -39,7 +38,7 @@ console.log('Server running at http://127.0.0.1:8888/');
 ```
 
 # npm
-[返回目录](#目录)  
+[返回目录](#目录)   
 NPM是随同NodeJS一起安装的包管理工具，类似pip  
 使用方法：`sudo npm install <package> -g`
 -g代表`global`，非全局安装不需要  
@@ -52,7 +51,7 @@ NPM是随同NodeJS一起安装的包管理工具，类似pip
 发布新模块的命令:略  
 
 # Node.js的回调函数
-### [返回目录](#目录)
+[返回目录](#目录)   
 Node.JS的异步编程直接体现就是回调  
 阻塞代码示例：
 ```js
@@ -78,7 +77,7 @@ console.log('程序执行结束');
 ```
 语句，待读取结束后执行匿名回调函数，输出文件内容。
 # Node.js_EventEmitter
-### [返回目录](#目录)
+[返回目录](#目录)  
 EventEmitter模块示例：
 ```js
 var events = require('events');
@@ -133,7 +132,7 @@ emit(event,[arg1],[arg2]...)|触发事件，如果规定了监听器的触发顺
 listenerCount(emitter, event)|返回指定事件的监听器数量
 
 # Node.js的单线程异步原理
-### [返回目录](#目录)
+[返回目录](#目录)   
 ![Event loop](./img/node_js_event_loop.png)
 
 1. Nodejs与操作系统交互，我们在 Javascript 中调用的方法，最终都会通过 process.binding 传递到 C/C++ 层面，最终由他们来执行真正的操作。Node.js 即这样与操作系统进行互动。  
@@ -142,7 +141,7 @@ listenerCount(emitter, event)|返回指定事件的监听器数量
 4. Event loop就是主线程从主线程的事件队列里面不停循环的读取事件，驱动了所有的异步回调函数的执行，Event loop总共7个阶段，每个阶段都有一个任务队列，当所有阶段被顺序执行一次后，event loop 完成了一个 tick。  
 
 # Node.js-Buffer类
-### [返回目录](#目录)
+[返回目录](#目录)   
 JavaScript 语言自身只有字符串数据类型，没有二进制数据类型。  
 在 Node.js 中，Buffer 类是随 Node 内核一起发布的核心库。Buffer 库为 Node.js 带来了一种存储原始数据的方法，可以让 Node.js 处理二进制数据，每当需要在 Node.js 中处理I/O操作中移动的数据时，就有可能使用 Buffer 库。
 ```js
@@ -194,7 +193,7 @@ Buffer.fill(value,[offset,end])
 
 # Node.js的Stream对象
 
-### [返回目录](#目录)
+[返回目录](#目录)   
 
 Stream是一个抽象接口，Node中有很多对象实现了这个接口。  
 例如，对Http服务器发起的request请求，就是一个Stream;stdin/stdout也都是Stream。  
@@ -286,8 +285,7 @@ console.log("文件解压完成。");
 
 ```
 # NodeJS的模块
-
-### [返回目录](#目录)
+[返回目录](#目录)   
 为了让NodeJS的文件可以相互调用，NodeJS提供了一个简单的模块系统。  
 模块是Node.js 应用程序的基本组成部分，文件和模块是一一对应的。换言之，一个 Node.js 文件就是一个模块，这个文件可能是JavaScript 代码、JSON 或者编译过的C/C++ 扩展。    
 Node.js 提供了 exports 和 require 两个对象，其中 exports 是模块公开的接口，require 用于从外部获取一个模块的接口，即所获取模块的 exports 对象。  
@@ -323,7 +321,8 @@ hello.sayHello();
 ```
 # NodeJS的函数
 
-### [返回目录](#目录)
+[返回目录](#目录)   
+
 在JS中，一个函数可以作为另一个函数的参数。我们可以先定义一个函数，然后传递，也可以直接在传参的地方定义匿名函数。  
 例如:
 ```js
@@ -462,7 +461,7 @@ Sec-WebSocket-Version: 13
 
 
 # NodeJS的路由
-### [返回目录](#目录)
+[返回目录](#目录)   
 路由可以理解为解析URL请求和其他的POST/GET请求，并提取数据执行相应代码的模块。  
 一个典型的解析过程如下:
 ```
