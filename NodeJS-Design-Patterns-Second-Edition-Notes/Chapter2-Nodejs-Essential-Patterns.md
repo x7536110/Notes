@@ -143,3 +143,297 @@ if (cache[filename]) {
 
 ## 模块系统及模式
 
+JavaScript的主要问题之一是没有命名空间。在全局范围内运行的程序会污染全局命名空间，造成相关变量、数据、方法名的冲突。解决这个问题的技术称为模块模式，看下列代码：
+
+```js
+const module = (() => {
+  const privateFoo = () => {
+    // ...
+  };
+  const privateBar = [];
+  const exported = {
+    publicFoo: () => {
+      // ...
+    },
+    publicBar: () => {
+      // ...
+    }
+  };
+  return exported;
+})();
+console.log(module);
+```
+此模式利用自执行匿名函数实现模块，仅导出旨希望被公开调用的部分。在上面的代码中，模块变量只包含导出的API，而其余的模块内容实际上从外部访问不到。我们将在稍后看到，这种模式背后的想法被用作Node.js模块系统的基础。
+
+### 自定义模块系统
+```js
+function loadModule(filename, module, require) {
+  const wrappedSrc = `(function(module, exports, require) {
+         ${fs.readFileSync(filename, 'utf8')}
+       })(module, module.exports, require);`;
+  eval(wrappedSrc);
+}
+const require = (moduleName) => {
+  console.log(`Require invoked for module: ${moduleName}`);
+  const id = require.resolve(moduleName);
+  // 是否命中缓存
+  if (require.cache[id]) {
+    return require.cache[id].exports;
+  }
+  // 定义module
+  const module = {
+    exports: {},
+    id: id
+  };
+  // 新模块引入，存入缓存
+  require.cache[id] = module;
+  // 加载模块
+  loadModule(id, module, require);
+  // 返回导出的变量
+  return module.exports;
+};
+require.cache = {};
+require.resolve = (moduleName) => {
+  /* 通过模块名作为参数resolve一个完整的模块 */
+};
+```
+上面的函数模拟了用于加载模块的原生`Node.js`的`require()`函数的行为。当然，这只是一个`demo`，它并不能准确且完整地反映`require()`函数的真实行为，但是为了更好地理解`Node.js`模块系统的内部实现，定义模块和加载模块。我们的自制模块系统的功能如下：
+
+- 模块名称被作为参数传入，我们首先做的是找寻模块的完整路径，我们称之为id。`require.resolve()`专门负责这项功能，它通过一个特定的解析算法实现相关功能（稍后将讨论）。
+- 如果模块已经被加载，它应该存在于缓存。在这种情况下，我们立即返回缓存中的模块。
+- 如果模块尚未加载，我们将首次加载该模块。创建一个模块对象，其中包含一个使用空对象字面值初始化的`exports`属性。该属性将被模块的代码用于导出该模块的公共API。
+- 缓存首次加载的模块对象。
+- 模块源代码从其文件中读取，代码被导入，如前所述。我们通过`require()`函数向模块提供我们刚刚创建的模块对象。该模块通过操作或替换`module.exports`对象来导出其公共`API`。
+- 最后，将代表模块的公共`API`的`module.exports`的内容返回给调用者。
+
+#### 定义模块
+
+```js
+// 加载另一个模块
+const dependency = require('./anotherModule');
+// 模块内的私有函数
+function log() {
+  console.log(`Well done ${dependency.username}`);
+}
+// 通过导出API实现共有方法
+module.exports.run = () => {
+  log();
+};
+```
+需要注意的是模块内的所有内容都是私有的，除非它被分配给`module.exports`变量。然后，当使用`require()`加载模块时，缓存并返回此变量的内容。
+
+#### 定义全局变量
+
+模块系统公开了一个名为`global`的特殊变量。分配给此变量的所有内容将会被定义到全局环境下。
+
+#### module.exports & exports
+每一个node.js执行文件，都自动创建一个`module`对象，同时，`module`对象会创建一个叫`exports`的属性，初始化的值是` {}`  
+变量`export`只是对`module.exports`的初始值的引用;我们已经看到，`exports`本质上在模块加载之前只是一个简单的对象。  
+重新给`exports`赋值并不会有任何影响，因为它并不会因此而改变`module.exports`的内容，它只是改变了该变量本身。
+
+#### require()是一个同步函数
+因此它应该放在所有逻辑前面  
+
+#### resolve算法
+[resolve算法的文档](https://nodejs.org/api/modules.html#modules_all_together)
+
+#### 模块缓存
+每个模块只会在它第一次引入的时候加载，此后的任意一次`require()`调用均从之前缓存的版本中取得。  
+
+#### 循环依赖
+为了防止模块载入的死循环，`Node.js`在模块第一次载入后会把它的结果进行缓存，下一次再对它进行载入的时候会直接从缓存中取出结果。所以在这种循环依赖情形下，不会有死循环，但是却会因为缓存造成模块没有按照我们预想的那样被导出
+
+### 模块定义模式
+#### 命名导出
+```js
+//file logger.js
+exports.info = (message) => {
+  console.log('info: ' + message);
+};
+exports.verbose = (message) => {
+  console.log('verbose: ' + message);
+};
+// file main.js
+const logger = require('./logger');
+logger.info('This is an informational message');
+logger.verbose('This is a verbose message');
+```
+大多数`Node.js`模块使用这种定义
+#### 函数导出
+将整个`module.exports`变量重新分配给一个函数。它的主要优点是它只暴露了一个函数，为模块提供了一个明确的入口点，使其更易于理解和使用，它也很好地展现了单一职责原则。这种定义模块的方法在社区中也被称为`substack`模式，在以下示例中查看此模式：
+```js
+// file logger.js
+module.exports = (message) => {
+  console.log(`info: ${message}`);
+};
+//这种方法还允许我们公开具有次要或更高级用例的其他函数
+module.exports.verbose = (message) => {
+  console.log(`verbose: ${message}`);
+};
+//调用
+// file main.js
+const logger = require('./logger');
+logger('This is an informational message');
+logger.verbose('This is a verbose message');
+```
+`Node.js`的模块化鼓励我们遵循采用单一职责原则（`SRP`）：每个模块应该对单个功能负责，该职责应完全由该模块封装，以保证复用性
+
+#### 构造器导出
+导出构造函数的模块是导出函数的模块的特例。其不同之处在于，使用这种新模式，我们允许用户使用构造函数创建新的实例，但是我们也可以扩展其原型并创建新类（继承）。
+```js
+// file logger.js
+function Logger(name) {
+  this.name = name;
+}
+Logger.prototype.log = function(message) {
+  console.log(`[${this.name}] ${message}`);
+};
+Logger.prototype.info = function(message) {
+  this.log(`info: ${message}`);
+};
+Logger.prototype.verbose = function(message) {
+  this.log(`verbose: ${message}`);
+};
+module.exports = Logger;
+// file main.js
+const Logger = require('./logger');
+const dbLogger = new Logger('DB');
+dbLogger.info('This is an informational message');
+const accessLogger = new Logger('ACCESS');
+accessLogger.verbose('This is a verbose message');
+```
+通过ES2015的`class`关键字语法也可以实现相同的模式：
+```js
+class Logger {
+  constructor(name) {
+    this.name = name;
+  }
+  log(message) {
+    console.log(`[${this.name}] ${message}`);
+  }
+  info(message) {
+    this.log(`info: ${message}`);
+  }
+  verbose(message) {
+    this.log(`verbose: ${message}`);
+  }
+}
+module.exports = Logger;
+```
+导出构造函数或类仍然为模块提供单个入口点，但是与`substack`模式相比，它暴露了更多内部细节，另一方面它也有了更强的扩展性。  
+这种模式的差异包括应用防止不适用`new`指令调用的防护。这个小技巧允许吧模块作为工厂`(factory)`使用：
+```js
+function Logger(name) {
+  if (!(this instanceof Logger)) {
+    return new Logger(name);
+  }
+  this.name = name;
+};
+```
+诀窍很简单：检查this是否存在并且是logger的一个实例，如果不是，则意味着Logger()函数被调用但是未使用new，然后继续创建新实例并返回给调用者。这种技术允许我们将模块也用作工厂：
+```js
+// file logger.js
+const Logger = require('./logger');
+const dbLogger = Logger('DB');
+accessLogger.verbose('This is a verbose message');
+```
+通过Node.js6提供的ES2015 new.target语法糖，可以实现一个更干净的方法。该利用公开了new.target属性，该属性是所有函数中可用的元属性，如果使用new关键字调用函数，则在运行时计算结果为true。 我们可以使用这种语法重写工厂：
+```js
+function Logger(name) {
+  if (!new.target) {
+    return new LoggerConstructor(name);
+  }
+  this.name = name;
+}
+```
+#### 导出实例
+
+利用require()的缓存机制来轻松地定义具有从构造函数或工厂创建的状态的有状态实例，可以在不同模块之间共享。
+```js
+//file logger.js
+function Logger(name) {
+  this.count = 0;
+  this.name = name;
+}
+Logger.prototype.log = function(message) {
+  this.count++;
+  console.log('[' + this.name + '] ' + message);
+};
+module.exports = new Logger('DEFAULT');
+// file main.js
+const logger = require('./logger');
+logger.log('This is an informational message');
+```
+#### 修改其他模块或全局作用域
+```js
+// file patcher.js
+// ./logger is another module
+require('./logger').customMessage = () => console.log('This is a new functionality');
+// file main.js
+require('./patcher');
+const logger = require('./logger');
+logger.customMessage();
+```
+
+## 观察者模式
+与reactor模式，回调模式和模块一样，观察者模式是Node.js基础之一，也是使用许多Node.js核心模块和用户定义模块的基础。
+
+与回调模式的主要区别在于，主体实际上可以通知多个观察者，而传统的CPS风格的回调通常主体的结果只会传播给一个监听器。
+
+### EventEmitter类
+观察者模式已经内置在核心模块中，可以通过`EventEmitter`类来实现。 `EventEmitter`类允许我们注册一个或多个函数作为监听器，当特定的事件类型被触发时，它的回调将被调用，以通知其监听器。以下图像直观地解释了这个概念：
+
+![img2](./img/C2P2.png)
+
+`EventEmitter`是一个类（原型），它是从事件核心模块导出的。EventEmitter模块示例：
+```js
+var events = require('events');
+var eventEmitter = new events.EventEmitter();
+// 监听器 #1
+var listener1 = function listener1() {
+   console.log('监听器 listener1 执行。');
+}
+// 监听器 #2
+var listener2 = function listener2() {
+  console.log('监听器 listener2 执行。');
+}
+// 绑定 connection 事件，处理函数为 listener1 
+eventEmitter.addListener('connection', listener1);
+// 绑定 connection 事件，处理函数为 listener2
+eventEmitter.on('connection', listener2);
+var eventListeners = require('events').EventEmitter.listenerCount(eventEmitter,'connection');
+console.log(eventListeners + " 个监听器监听连接事件。");
+// 处理 connection 事件 
+eventEmitter.emit('connection');
+// 移除监绑定的 listener1 函数
+eventEmitter.removeListener('connection', listener1);
+console.log("listener1 不再受监听。");
+// 触发连接事件
+eventEmitter.emit('connection');
+eventListeners = require('events').EventEmitter.listenerCount(eventEmitter,'connection');
+console.log(eventListeners + " 个监听器监听连接事件。");
+console.log("程序执行完毕。");
+```
+执行结果：
+```bash
+$ node main.js
+2 个监听器监听连接事件。
+监听器 listener1 执行。
+监听器 listener2 执行。
+listener1 不再受监听。
+监听器 listener2 执行。
+1 个监听器监听连接事件。
+程序执行完毕。
+```
+`EvenEmitter.on()`与`EvenEmitter.addListener()`并没有区别。
+EventEmitter方法表:  
+方法名|描述
+---|---
+addListener(event,listener)|为指定事件添加一个监听器到监听器队列的尾部
+on(event,listener)|为指定事件添加一个监听器到监听器队列的尾部
+once(event,listener)|为指定事件注册一个单次监听器
+removeListener([event])|移除[指定]事件的监听器,缺省移除所有事件的监听器
+setMaxListeners(n)|指定监听器数量,通常监听器大于等于10时会发出警告
+listeners(event)|返回监听器队列
+emit(event,[arg1],[arg2]...)|触发事件，如果规定了监听器的触发顺序则按指定顺序触发
+listenerCount(emitter, event)|返回指定事件的监听器数量
