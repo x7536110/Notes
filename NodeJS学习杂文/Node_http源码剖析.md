@@ -58,12 +58,6 @@ function Server(requestListener) {
   this.timeout = 2 * 60 * 1000;
 }
 
-  this.addListener('clientError', function(err, conn) {
-    conn.destroy();
-  });
-
-  this.timeout = 2 * 60 * 1000;
-}
 ```
 可以看到，Server()是继承自`net.Server()`，Server()构造期间，首先判断当前对象是否已经是一个Server()的实例，如果是那么就构造一个新的对象；然后进行一些配置，最后把`requestListener`绑定到了实例的`'request'`事件上，并为`'clientError'`事件绑定了处理函数
 
