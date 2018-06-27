@@ -300,7 +300,9 @@ Server.prototype.listen = function()
 
 因此，我们在编写http服务器程序时，可以参考这个结构，下面我们开始自己写一个简单的http服务器程序。
 
-# 编写一个简单的HTTP服务器
 
+# 编写一个简单的HTTP服务器
+```js
+```
 
 
