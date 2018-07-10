@@ -5,7 +5,7 @@
 
 ## 概述
 
-Node-Schedule的调度方式是基于时间，而不是基于时间间隔的，这代表着，虽然你能很轻松的使用schedule模块实现类似于"每隔5分钟执行一次某任务"这种需求，但是相比较而言，setInterval可能更适合这种需求。但是如果你想实现类似"每个月第三个周的星期二的晚八点四十分和九点执行这个程序"，那么，使用Node-Schedu就哦了。
+Node-Schedule的调度方式是基于时刻，而不是基于时间间隔的，这代表着，虽然你能很轻松的使用schedule模块实现类似于"每隔5分钟执行一次某任务"这种需求，但是相比较而言，setInterval可能更适合这种需求。但是如果你想实现类似"每个月第三个周的星期二的晚八点四十分和九点执行这个程序"，那么，使用Node-Schedu就哦了。
 
 ## 使用cron进行任务安排
 
@@ -68,19 +68,71 @@ Job对象继承自EventEmitter对象，每次运行时会发送一个事件；�
 ### 基于cron表达式的调度
 ```js
 //使用cron表达式安排任务
-var schedule = require('node-schedule');
-var j = schedule.scheduleJob('42 * * * *', function(){
-  console.log('The answer to life, the universe, and everything!');
-});
+let cron = '40-50 * * * * *'
+console.log('任务开始时间：',new Date());
+let j = schedule.scheduleJob(cron,function(){
+    console.log(`现在时间${Date()}`);
+})
 ```
+输出结果：   
+![cron](/img/cron.png)
 ### 基于Date的调度
 **注意，在JS中，0代表1月，11代表12月**
 ```js
-var schedule = require('node-schedule');
-var date = new Date(2012, 11, 21, 5, 30, 0);
- 
-var j = schedule.scheduleJob(date, function(){
-  console.log('The world is going to end today.');
+let date = new Date(2018, 6, 10, 16, 50, 10);
+let j = schedule.scheduleJob(date, function(){
+  console.log(`现在时间${Date()}`);
 });
 ```
-//TODO
+输出结果:  
+![date](/img/date.png)
+
+### Recurrence-Rule调度模式
+```js
+let rule = new schedule.RecurrenceRule();
+// rule.dayOfWeek = 2;
+// rule.month = 3;
+// rule.dayOfMonth = 1;
+// rule.hour = 1;
+// rule.minute = 42;
+rule.second = 30;
+console.log('任务开始时间：',new Date());
+let j = schedule.scheduleJob(rule, function(){
+    console.log(`触发时间:${Date()}`);
+});
+```
+![RecurrenceRule](/img/RecurrenceRule.png)
+
+### 对象文法调度模式
+```js
+let j = schedule.scheduleJob({ hour: 17, minute: 1 }, function () {
+    console.log(`触发时间:${Date()}`);
+});
+```
+
+### 区间定时模式
+```js
+let startTime = new Date(Date.now() + 5000);
+let endTime = new Date(startTime.getTime() + 5000);
+console.log(`任务开始时间:${Date()}`);
+let j = schedule.scheduleJob({ start: startTime, end: endTime, rule: '*/1 * * * * *' }, function(){
+    console.log(`触发时间:${Date()}`);
+});
+```
+输出结果:  
+![interval](/img/interval.png)
+
+## 取消作业
+- `job.cancel(reshedule)`  
+    - 该方法可以取消任何作业  
+    - `j.cancel();`  
+        - 所有的调度都会被取消。如果传入的reschedule参数为true，那么调度会重启  
+
+- `job.cancelNext(reshedule)`  
+    - 此方法使下一个计划的调用或作业无效。将参数reschedule设置为true时，之后会重新安排Job。  
+
+- `job.reschedule(spec)`  
+    - 此方法取消所有挂起的调用，并使用给定的规范再次将Job重新注册为new。成功/失败时返回true / false。  
+
+- `job.nextInvocation()`  
+    - 此方法返回此Job的计划下一个触发时刻对应的Date对象。 如果未计划调用，则该方法返回null。  
